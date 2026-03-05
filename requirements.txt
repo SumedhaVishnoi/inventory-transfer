@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-pandas
+pandas==2.1.4
 openpyxl
 jinja2
 python-multipart

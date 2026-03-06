@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Transfer Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --green:#2e7d32;--green-dark:#1b5e20;--green-light:#e8f5e9;
+      --blue:#1565c0;--blue-light:#e3f2fd;
+      --orange:#e65100;--orange-light:#fff3e0;
+      --red:#c62828;--red-light:#ffebee;
+      --ink:#1a2416;--ink-mid:#3d4a3f;--ink-light:#6b7a6d;
+      --rule:#dce8dc;--bg:#f8fbf8;--white:#fff;
+      --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+      --radius:10px;--shadow:0 2px 12px rgba(27,94,32,.1);
+    }
+    body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+    .hidden{display:none!important}
+
+    /* HEADER */
+    .header{background:var(--white);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(27,94,32,.07)}
+    .header-inner{max-width:1100px;margin:0 auto;padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-box{width:34px;height:34px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+    .logo-name{font-size:15px;font-weight:700;color:var(--green)}
+    .logo-sub{font-size:11px;color:var(--ink-light);display:block}
+    .header-badge{background:var(--green-light);color:var(--green);border:1px solid #c8e6c9;border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600}
+
+    /* MAIN */
+    .main{flex:1;max-width:1100px;margin:0 auto;width:100%;padding:40px 28px 80px;display:flex;flex-direction:column;gap:36px}
+
+    /* SECTION */
+    .section{display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .step-label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink-light)}
+    .step-num{background:var(--green);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
+    /* CARD */
+    .card{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);max-width:660px}
+
+    /* UPLOAD */
+    .dropzone{border:2px dashed #a5d6a7;border-radius:8px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s}
+    .dropzone:hover,.dropzone.over{border-color:var(--green);background:var(--green-light)}
+    .drop-icon{font-size:40px;margin-bottom:10px}
+    .drop-title{font-size:15px;font-weight:600;margin-bottom:4px}
+    .drop-sub{font-size:13px;color:var(--ink-light);margin-bottom:6px}
+    .file-link{color:var(--green);font-weight:600;cursor:pointer;text-decoration:underline}
+    .drop-hint{font-size:11.5px;color:var(--ink-light)}
+    .file-preview{display:flex;align-items:center;gap:12px;background:var(--green-light);border:1px solid #c8e6c9;border-radius:8px;padding:12px 16px}
+    .file-preview-name{flex:1;font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .file-preview-size{font-size:11px;color:var(--ink-light);font-family:var(--mono)}
+    .btn-remove{background:none;border:none;cursor:pointer;color:var(--ink-light);font-size:14px;padding:4px 6px;border-radius:4px}
+    .btn-remove:hover{background:#ffcdd2;color:var(--red)}
+    .upload-actions{margin-top:16px}
+
+    /* BUTTONS */
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:none;border-radius:8px;padding:11px 24px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,transform .15s;box-shadow:0 3px 12px rgba(27,94,32,.25)}
+    .btn-primary:hover:not(:disabled){background:var(--green-dark);transform:translateY(-1px)}
+    .btn-primary:disabled{background:#b0bfb1;cursor:not-allowed;box-shadow:none}
+    .btn-search{background:var(--green);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+    .btn-search:hover{background:var(--green-dark)}
+    .btn-secondary{background:none;border:1px solid var(--rule);border-radius:8px;padding:8px 16px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--ink-mid);cursor:pointer;transition:all .15s}
+    .btn-secondary:hover{border-color:var(--green);color:var(--green);background:var(--green-light)}
+
+    /* LOADED BAR */
+    .loaded-bar{background:var(--green);color:#fff;border-radius:8px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:760px}
+    .loaded-info{display:flex;align-items:center;gap:10px}
+    .loaded-check{background:rgba(255,255,255,.2);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+    .loaded-file{font-weight:600;font-size:13.5px}
+    .loaded-meta{font-size:11.5px;opacity:.75;font-family:var(--mono)}
+    .btn-change{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:6px;padding:6px 12px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .btn-change:hover{background:rgba(255,255,255,.25)}
+
+    /* SEARCH */
+    .search-card{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);max-width:760px}
+    .search-row{display:flex;gap:10px}
+    .search-wrap{position:relative;flex:1}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+    .search-input{width:100%;padding:11px 12px 11px 38px;border:1.5px solid var(--rule);border-radius:8px;font-family:var(--mono);font-size:13.5px;color:var(--ink);background:var(--bg);outline:none;transition:border-color .2s,box-shadow .2s}
+    .search-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(46,125,50,.1);background:#fff}
+    .ac-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--rule);border-radius:8px;box-shadow:0 6px 20px rgba(27,94,32,.12);z-index:50;max-height:220px;overflow-y:auto}
+    .ac-item{padding:10px 14px;font-family:var(--mono);font-size:13px;cursor:pointer;transition:background .1s}
+    .ac-item:hover{background:var(--green-light);color:var(--green)}
+    .search-hint{font-size:12px;color:var(--ink-light);margin-top:8px}
+
+    /* ERROR */
+    .error-bar{display:flex;align-items:center;gap:10px;background:var(--red-light);border:1px solid #ef9a9a;border-radius:8px;padding:11px 14px;max-width:760px;animation:fadeUp .2s ease}
+    .error-msg{flex:1;font-size:13px;color:var(--red);font-weight:500}
+    .btn-close{background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:3px 5px;border-radius:3px}
+
+    /* SUMMARY BAR */
+    .summary-bar{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:var(--shadow)}
+    .summary-asin{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .asin-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--ink-light)}
+    .asin-val{font-size:17px;font-weight:700;color:var(--green);font-family:var(--mono)}
+    .asin-sku{font-size:12.5px;color:var(--ink-light)}
+    .summary-stats{display:flex;gap:24px}
+    .stat{text-align:center}
+    .stat-n{display:block;font-size:24px;font-weight:700;font-family:var(--mono);letter-spacing:-1px}
+    .stat-n.g{color:var(--green)}.stat-n.o{color:var(--orange)}
+    .stat-l{font-size:11px;color:var(--ink-light);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+
+    /* WH POOL */
+    .wh-pool{background:var(--green-light);border:1px solid #c8e6c9;border-radius:var(--radius);padding:16px 20px}
+    .wh-pool-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--green);margin-bottom:8px}
+    .wh-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+    .wh-chip{background:var(--green);color:#fff;border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:11.5px;display:inline-flex;align-items:center;gap:5px}
+    .wh-qty{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;font-size:10.5px}
+    .wh-note{font-size:12px;color:var(--ink-mid)}
+    .wh-note strong{color:var(--green)}
+
+    /* TABLE */
+    .table-wrap{background:var(--white);border:1px solid var(--rule);border-radius:var(--radius);overflow-x:auto;box-shadow:var(--shadow)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{background:var(--green-dark);color:#a5d6a7;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:12px 14px;text-align:left;white-space:nowrap}
+    tbody tr{border-bottom:1px solid var(--rule);transition:background .1s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#f5faf5}
+    tbody tr.ok{background:#f1f8f1}tbody tr.ok:hover{background:#e8f5e9}
+    tbody tr.warn{background:#fff9f9}tbody tr.warn:hover{background:#ffebee}
+    td{padding:11px 14px;color:var(--ink-mid);vertical-align:top}
+    td.num{font-family:var(--mono);text-align:right;color:var(--ink);font-weight:500;white-space:nowrap}
+    td.g{color:var(--green)!important}td.r{color:var(--red)!important;font-weight:600}
+
+    /* CHIPS */
+    .chip-state{background:var(--green-light);color:var(--green);border:1px solid #c8e6c9;border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap}
+    .chip-dest{background:var(--blue-light);color:var(--blue);border:1px solid #90caf9;border-radius:4px;padding:2px 7px;font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap}
+
+    /* BADGE */
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+    .badge.ok{background:var(--green-light);color:var(--green-dark);border:1px solid #a5d6a7}
+    .badge.red{background:var(--red-light);color:var(--red);border:1px solid #ef9a9a}
+    .badge.grey{background:#f5f5f5;color:#616161;border:1px solid #e0e0e0}
+
+    /* ALLOC ROWS */
+    .alloc-row{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:11.5px}
+    .alloc-row:last-child{border-bottom:none}
+    .a-src{background:var(--orange-light);color:var(--orange);border:1px solid #ffcc80;border-radius:4px;padding:1px 6px;font-weight:600}
+    .a-arr{color:var(--ink-light);font-size:12px}
+    .a-dst{background:var(--blue-light);color:var(--blue);border:1px solid #90caf9;border-radius:4px;padding:1px 6px;font-weight:600}
+    .a-units{color:var(--green);font-weight:700;margin-left:3px}
+    .na{color:#bdbdbd;font-style:italic;font-size:12px}
+
+    /* RESULTS FOOTER */
+    .results-footer{padding:4px 0}
+
+    /* LOADING */
+    .overlay{position:fixed;inset:0;z-index:200;background:rgba(248,251,248,.88);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}
+    .overlay-box{background:#fff;border:1px solid var(--rule);border-radius:16px;padding:40px 50px;text-align:center;box-shadow:0 16px 48px rgba(27,94,32,.12)}
+    .spinner{width:40px;height:40px;border:4px solid var(--green-light);border-top-color:var(--green);border-radius:50%;animation:spin .85s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner-text{font-weight:600;font-size:14px;color:var(--ink)}
+
+    footer{background:#fff;border-top:1px solid var(--rule);padding:16px 28px;text-align:center;font-size:12px;color:var(--ink-light)}
+    @media(max-width:700px){.main{padding:24px 14px 60px}.header-inner{padding:0 14px}.search-row{flex-direction:column}.summary-bar{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-box">📦</div>
+      <div>
+        <span class="logo-name">InventoryFlow</span>
+        <span class="logo-sub">Transfer Planner · Surplus-Safe</span>
+      </div>
+    </div>
+    <div id="hdrBadge"></div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- STEP 1 -->
+  <section class="section" id="secUpload">
+    <div class="step-label"><span class="step-num">01</span> Upload Inventory File</div>
+    <div class="card">
+      <div class="dropzone" id="dropzone">
+        <div class="drop-icon">📊</div>
+        <p class="drop-title">Drop your Excel file here</p>
+        <p class="drop-sub">or <label for="fileInput" class="file-link">browse to upload</label></p>
+        <p class="drop-hint">Must have inventory data + Warehouse_cluster sheets · NON-OTC only</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden/>
+      </div>
+      <div class="file-preview hidden" id="filePreview">
+        <span style="font-size:22px">📄</span>
+        <div style="flex:1;min-width:0">
+          <div class="file-preview-name" id="fileName"></div>
+          <div class="file-preview-size" id="fileSize"></div>
+        </div>
+        <button class="btn-remove" id="btnRemove">✕</button>
+      </div>
+      <div class="upload-actions">
+        <button class="btn-primary" id="btnUpload" disabled>Upload &amp; Load Data →</button>
+      </div>
+    </div>
+    <div class="error-bar hidden" id="errUpload">
+      <span style="font-size:16px">⚠</span>
+      <span class="error-msg" id="errUploadMsg"></span>
+      <button class="btn-close" id="closeErrUpload">✕</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="section hidden" id="secSearch">
+    <div class="step-label"><span class="step-num">02</span> Search by ASIN</div>
+    <div class="loaded-bar">
+      <div class="loaded-info">
+        <div class="loaded-check">✓</div>
+        <div>
+          <div class="loaded-file" id="loadedFile"></div>
+          <div class="loaded-meta" id="loadedMeta"></div>
+        </div>
+      </div>
+      <button class="btn-change" id="btnChange">↩ Change File</button>
+    </div>
+    <div class="search-card">
+      <div class="search-row">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="asinInput" class="search-input" placeholder="Type or paste ASIN (e.g. B00FQPKNEW)" autocomplete="off"/>
+          <div class="ac-list hidden" id="acList"></div>
+        </div>
+        <button class="btn-search" id="btnSearch">Search</button>
+      </div>
+      <p class="search-hint">NON-OTC only · Surplus-safe · Same-state warehouses excluded from source</p>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--rule);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:12.5px;color:var(--ink-light)">Or process everything at once:</span>
+        <button class="btn-search" id="btnProcessAll" style="background:#1565c0">⚡ Process All ASINs &amp; Download Excel</button>
+        <span id="processStatus" style="font-size:12px;color:var(--ink-light)"></span>
+      </div>
+    </div>
+    <div class="error-bar hidden" id="errSearch">
+      <span style="font-size:16px">⚠</span>
+      <span class="error-msg" id="errSearchMsg"></span>
+      <button class="btn-close" id="closeErrSearch">✕</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="section hidden" id="secResults">
+    <div class="step-label"><span class="step-num">03</span> Transfer Plan</div>
+
+    <div class="summary-bar">
+      <div class="summary-asin">
+        <span class="asin-label">ASIN</span>
+        <span class="asin-val" id="rAsin"></span>
+        <span class="asin-sku" id="rSku"></span>
+      </div>
+      <div class="summary-stats">
+        <div class="stat"><span class="stat-n" id="rClusters"></span><span class="stat-l">Clusters</span></div>
+        <div class="stat"><span class="stat-n g" id="rSupply"></span><span class="stat-l">Supply</span></div>
+        <div class="stat"><span class="stat-n o" id="rDemand"></span><span class="stat-l">Demand</span></div>
+      </div>
+    </div>
+
+    <div class="wh-pool">
+      <div class="wh-pool-title">Available Warehouse Pool</div>
+      <div class="wh-chips" id="whChips"></div>
+      <p class="wh-note">⚡ <strong>Safety rule:</strong> Only <strong>surplus</strong> stock is transferred (above owning cluster's need). Same-state warehouses are never used as source.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cluster</th>
+            <th>State</th>
+            <th>Dest. Warehouse</th>
+            <th>Required</th>
+            <th>FC Stock</th>
+            <th>Allocated</th>
+            <th>Shortfall</th>
+            <th>Transfer Plan (From → To : Units)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+
+    <div class="results-footer">
+      <button class="btn-secondary" id="btnNewSearch">← Search Another ASIN</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="overlay hidden" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p class="spinner-text" id="overlayText">Processing…</p>
+  </div>
+</div>
+
+<footer>InventoryFlow · NON-OTC Inventory Transfer Planner · Surplus-Safe Allocation</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let selFile = null;
+let allAsins = [];
+
+// ── Elements ───────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const dropzone=$('dropzone'),fileInput=$('fileInput'),filePreview=$('filePreview');
+const fileName=$('fileName'),fileSize=$('fileSize'),btnRemove=$('btnRemove');
+const btnUpload=$('btnUpload'),errUpload=$('errUpload'),errUploadMsg=$('errUploadMsg'),closeErrUpload=$('closeErrUpload');
+const secUpload=$('secUpload'),secSearch=$('secSearch'),secResults=$('secResults');
+const loadedFile=$('loadedFile'),loadedMeta=$('loadedMeta'),btnChange=$('btnChange');
+const asinInput=$('asinInput'),btnSearch=$('btnSearch'),acList=$('acList');
+const errSearch=$('errSearch'),errSearchMsg=$('errSearchMsg'),closeErrSearch=$('closeErrSearch');
+const overlay=$('overlay'),overlayText=$('overlayText'),hdrBadge=$('hdrBadge');
+const rAsin=$('rAsin'),rSku=$('rSku'),rClusters=$('rClusters'),rSupply=$('rSupply'),rDemand=$('rDemand');
+const whChips=$('whChips'),tBody=$('tBody'),btnNewSearch=$('btnNewSearch');
+
+// ── Helpers ────────────────────────────────────────────────────────
+const fmt = n => Number(n).toLocaleString();
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtBytes = b => b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';
+const showLoad = msg => { overlayText.textContent=msg; overlay.classList.remove('hidden'); };
+const hideLoad = () => overlay.classList.add('hidden');
+const showErrUpload = m => { errUploadMsg.textContent=m; errUpload.classList.remove('hidden'); };
+const hideErrUpload = () => errUpload.classList.add('hidden');
+const showErrSearch = m => { errSearchMsg.textContent=m; errSearch.classList.remove('hidden'); };
+const hideErrSearch = () => errSearch.classList.add('hidden');
+
+// ── File handling ──────────────────────────────────────────────────
+function setFile(f) {
+  selFile = f;
+  fileName.textContent = f.name;
+  fileSize.textContent = fmtBytes(f.size);
+  dropzone.classList.add('hidden');
+  filePreview.classList.remove('hidden');
+  btnUpload.disabled = false;
+}
+function clearFile() {
+  selFile=null; fileInput.value='';
+  filePreview.classList.add('hidden');
+  dropzone.classList.remove('hidden');
+  btnUpload.disabled=true;
+}
+
+fileInput.addEventListener('change', e => { if(e.target.files[0]) setFile(e.target.files[0]); });
+btnRemove.addEventListener('click', clearFile);
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if(f && (f.name.endsWith('.xlsx')||f.name.endsWith('.xls'))) setFile(f);
+  else showErrUpload('Please drop a valid .xlsx or .xls file.');
+});
+closeErrUpload.addEventListener('click', hideErrUpload);
+closeErrSearch.addEventListener('click', hideErrSearch);
+
+// ── Upload ─────────────────────────────────────────────────────────
+btnUpload.addEventListener('click', async () => {
+  if(!selFile) return;
+  hideErrUpload(); showLoad('Loading inventory data…');
+  const fd = new FormData(); fd.append('file', selFile);
+  try {
+    const res = await fetch('/upload', {method:'POST', body:fd});
+    const data = await res.json();
+    if(!res.ok) { showErrUpload(data.error||'Upload failed.'); return; }
+    allAsins = data.asins||[];
+    loadedFile.textContent = selFile.name;
+    loadedMeta.textContent = `${data.total_rows.toLocaleString()} NON-OTC rows · ${data.unique_asins.toLocaleString()} ASINs`;
+    hdrBadge.innerHTML = `<span class="header-badge">✓ ${esc(selFile.name)}</span>`;
+    secSearch.classList.remove('hidden');
+    secSearch.scrollIntoView({behavior:'smooth'});
+  } catch(e) { showErrUpload('Network error: '+e.message); }
+  finally { hideLoad(); }
+});
+
+// ── Change file ────────────────────────────────────────────────────
+btnChange.addEventListener('click', () => {
+  clearFile(); secSearch.classList.add('hidden'); secResults.classList.add('hidden');
+  hdrBadge.innerHTML=''; allAsins=[]; asinInput.value='';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+// ── Autocomplete ───────────────────────────────────────────────────
+asinInput.addEventListener('input', () => {
+  const q = asinInput.value.trim().toUpperCase();
+  if(!q || q.length<2) { acList.classList.add('hidden'); return; }
+  const hits = allAsins.filter(a=>a.toUpperCase().includes(q)).slice(0,8);
+  if(!hits.length) { acList.classList.add('hidden'); return; }
+  acList.innerHTML = hits.map(a=>`<div class="ac-item" data-v="${esc(a)}">${esc(a)}</div>`).join('');
+  acList.classList.remove('hidden');
+});
+acList.addEventListener('click', e => {
+  const item = e.target.closest('.ac-item');
+  if(!item) return;
+  asinInput.value = item.dataset.v;
+  acList.classList.add('hidden');
+});
+document.addEventListener('click', e => { if(!e.target.closest('.search-wrap')) acList.classList.add('hidden'); });
+asinInput.addEventListener('keydown', e => { if(e.key==='Enter') btnSearch.click(); });
+
+// ── Search ─────────────────────────────────────────────────────────
+btnSearch.addEventListener('click', async () => {
+  const asin = asinInput.value.trim();
+  if(!asin) return;
+  hideErrSearch(); showLoad('Analysing transfer plan…');
+  try {
+    const res = await fetch(`/search?asin=${encodeURIComponent(asin)}`);
+    const data = await res.json();
+    if(!res.ok) { showErrSearch(data.error||'Search failed.'); return; }
+    renderResults(data);
+  } catch(e) { showErrSearch('Network error: '+e.message); }
+  finally { hideLoad(); }
+});
+
+// ── Render results ─────────────────────────────────────────────────
+function badgeClass(s) {
+  if(s==='Transfer Planned') return 'ok';
+  if(s==='Insufficient Stock') return 'red';
+  return 'grey';
+}
+
+function renderResults(data) {
+  const {results, summary} = data;
+  rAsin.textContent = summary.asin;
+  rSku.textContent  = summary.sku||'';
+  rClusters.textContent = summary.total_clusters;
+  rSupply.textContent   = fmt(summary.total_supply);
+  rDemand.textContent   = fmt(summary.total_demand);
+
+  const ws = summary.wh_stock||{};
+  whChips.innerHTML = Object.keys(ws).length
+    ? Object.entries(ws).map(([w,q])=>`<span class="wh-chip"><strong>${esc(w)}</strong><span class="wh-qty">${q}</span></span>`).join('')
+    : '<span class="na">No warehouse stock available</span>';
+
+  tBody.innerHTML = results.map(r => {
+    const rowCls = r.status==='Transfer Planned'?'ok':r.status==='Insufficient Stock'?'warn':'';
+    let planHtml;
+    if(r.allocations && r.allocations.length) {
+      planHtml = r.allocations.map(a=>
+        `<div class="alloc-row">
+          <span class="a-src">${esc(a.source)}</span>
+          <span class="a-arr">→</span>
+          <span class="a-dst">${esc(a.destination)}</span>
+          <span class="a-units">${a.units} units</span>
+        </div>`
+      ).join('');
+    } else {
+      planHtml = '<span class="na">No surplus available</span>';
+    }
+    return `<tr class="${rowCls}">
+      <td><strong>${esc(r.cluster)}</strong></td>
+      <td><span class="chip-state">${esc(r.dest_state)}</span></td>
+      <td><span class="chip-dest">${esc(r.dest_warehouse)}</span></td>
+      <td class="num">${fmt(r.required_stock)}</td>
+      <td class="num">${fmt(r.fc_stock)}</td>
+      <td class="num ${r.allocated>0?'g':''}">${fmt(r.allocated)}</td>
+      <td class="num ${r.shortfall>0?'r':''}">${r.shortfall>0?fmt(r.shortfall):'—'}</td>
+      <td>${planHtml}</td>
+      <td><span class="badge ${badgeClass(r.status)}">${esc(r.status)}</span></td>
+    </tr>`;
+  }).join('');
+
+  secResults.classList.remove('hidden');
+  secResults.scrollIntoView({behavior:'smooth'});
+}
+
+btnNewSearch.addEventListener('click', () => {
+  secResults.classList.add('hidden');
+  asinInput.value='';
+  secSearch.scrollIntoView({behavior:'smooth'});
+});
+
+// ── Process All & Download ─────────────────────────────────────────
+const btnProcessAll  = $('btnProcessAll');
+const processStatus  = $('processStatus');
+
+btnProcessAll.addEventListener('click', async () => {
+  processStatus.textContent = 'Processing all ASINs… please wait';
+  btnProcessAll.disabled = true;
+  showLoad('Processing all ASINs — generating Excel…');
+  try {
+    const res = await fetch('/download');
+    if (!res.ok) {
+      const data = await res.json();
+      showErrSearch(data.error || 'Failed to generate file.');
+      return;
+    }
+    // Trigger browser download
+    const blob  = await res.blob();
+    const url   = URL.createObjectURL(blob);
+    const a     = document.createElement('a');
+    a.href      = url;
+    a.download  = 'transfer_plan.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    processStatus.textContent = '✓ Downloaded successfully';
+  } catch(e) {
+    showErrSearch('Network error: ' + e.message);
+    processStatus.textContent = '';
+  } finally {
+    hideLoad();
+    btnProcessAll.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
